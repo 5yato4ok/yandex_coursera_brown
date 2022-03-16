@@ -2,6 +2,8 @@
 
 #include <sstream>
 #include <string>
+#include <string_view>
+
 
 namespace Ini {
 
@@ -12,18 +14,17 @@ void LoadSection(string line, Section* section) {
   section->insert({category, value});
 }
 
-string GetSectionName(const string& line) {
+string GetSectionName(string line) {
   if (line.empty() || line[0] != '[') {
     return "";
   }
-  return line.substr(1, line.find(']') - 1);
+  return line.substr(1, line.size() - 2);
 }
 
 Document Load(istream& input) {
   Document result;
+  Section* curSec = nullptr;
   string line;
-  getline(input, line);
-  Section* curSec = &result.AddSection(GetSectionName(line));
   while (getline(input, line)) {
     if (line.empty()) {
       continue;
@@ -39,10 +40,7 @@ Document Load(istream& input) {
   return result;
 }
 
-const Section& Document::GetSection(const string& name) const {
-  auto test = sections.at(name);
-  return sections.at(name);
-}
+const Section& Document::GetSection(const string& name) const { return sections.at(name); }
 
 Section& Document::AddSection(string name) { return sections[name]; }
 
