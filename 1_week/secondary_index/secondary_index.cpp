@@ -28,9 +28,7 @@ class Database {
     auto itRecByTime = recordOrderedByTimeStamp.insert({record.timestamp, it});
     auto itRecByKarma = recordOrderedByKarma.insert({record.karma, it});
     auto itRecByUser = recordOrderedByUser.insert({record.user, it});
-    if (itRecByTime == recordOrderedByTimeStamp.end() ||
-        itRecByKarma == recordOrderedByKarma.end() ||
-        itRecByUser == recordOrderedByUser.end()) {
+    if (itRecByTime == recordOrderedByTimeStamp.end() || itRecByKarma == recordOrderedByKarma.end() || itRecByUser == recordOrderedByUser.end()) {
       return false;
     }
     itersById.insert({record.id, {it, itRecByTime, itRecByKarma, itRecByUser}});
@@ -45,7 +43,7 @@ class Database {
     if (result == itersById.end()) {
       return false;
     }
-    
+
     dataStorage.erase(result->second.iterData);
     auto iter = itersById.at(id);
 
@@ -61,34 +59,30 @@ class Database {
 
   template <typename Callback>
   void RangeByTimestamp(int low, int high, Callback callback) const {
-    for (auto it = recordOrderedByTimeStamp.find(low);
-         it != recordOrderedByTimeStamp.end(); it++) {
-      if (it->first > high) {
-        break;
-      }
-      callback(**it->second);
+    auto lower = recordOrderedByTimeStamp.lower_bound(low);
+    const auto upper = recordOrderedByTimeStamp.upper_bound(high);
+
+    while (lower != upper && callback(**lower->second)) {
+      ++lower;
     }
   }
 
   template <typename Callback>
   void RangeByKarma(int low, int high, Callback callback) const {
-    for (auto it = recordOrderedByKarma.find(low);
-         it != recordOrderedByKarma.end(); it++) {
-      if (it->first > high) {
-        break;
-      }
-      callback(**it->second);
+    auto lower = recordOrderedByKarma.lower_bound(low);
+    const auto upper = recordOrderedByKarma.upper_bound(high);
+
+    while (lower != upper && callback(**lower->second)) {
+      ++lower;
     }
   }
 
   template <typename Callback>
   void AllByUser(const string& user, Callback callback) const {
-    for (auto it = recordOrderedByUser.find(user);
-         it != recordOrderedByUser.end(); it++) {
-      if (it->first != user) {
-        break;
-      }
-      callback(**it->second);
+    auto [first, end] = recordOrderedByUser.equal_range(user);
+
+    while (first != end && callback(**first->second)) {
+      ++first;
     }
   }
 
@@ -127,6 +121,22 @@ void TestRangeBoundaries() {
   ASSERT_EQUAL(2, count);
 }
 
+void TestTimeStamp() {
+  Database db;
+  db.Put({"id1", "Don't sell", "master", 1536107260, 1000});
+  db.Put({"id2", "Rethink life", "master", 1536107260, 2000});
+  db.Put({"id3", "Rethink life2", "master", 1536107261, 2000});
+  db.Put({"id4", "Rethink life3", "master", 1536107262, 2000});
+
+  int count = 0;
+  db.RangeByTimestamp(0, 1536107261, [&count](const Record&) {
+    ++count;
+    return true;
+  });
+
+  ASSERT_EQUAL(3, count);
+}
+
 void TestSameUser() {
   Database db;
   db.Put({"id1", "Don't sell", "master", 1536107260, 1000});
@@ -159,5 +169,6 @@ int main() {
   RUN_TEST(tr, TestRangeBoundaries);
   RUN_TEST(tr, TestSameUser);
   RUN_TEST(tr, TestReplacement);
+  RUN_TEST(tr, TestTimeStamp);
   return 0;
 }
