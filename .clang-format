@@ -5,4 +5,4 @@ BasedOnStyle: Google
 # "int& foo" for this project:
 DerivePointerAlignment: false
 PointerAlignment: Left
-ColumnLimit: 160
+ColumnLimit: 120
