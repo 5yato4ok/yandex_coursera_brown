@@ -28,6 +28,7 @@ init_func init;
 mutable std::optional<T> data;
 };
 
+
 void UseExample() {
   const string big_string = "Giant amounts of memory";
 
